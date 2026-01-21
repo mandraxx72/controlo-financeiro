@@ -2,7 +2,7 @@
     "name": "Controlo Financeiro",
     "short_name": "Finanças",
     "description": "Aplicação de controlo financeiro pessoal",
-    "start_url": "/index.html",
+    "start_url": "./index.html",
     "display": "standalone",
     "background_color": "#0a0f1a",
     "theme_color": "#00d4ff",
@@ -21,6 +21,9 @@
             "purpose": "any maskable"
         }
     ],
-    "categories": ["finance", "utilities"],
+    "categories": [
+        "finance",
+        "utilities"
+    ],
     "lang": "pt-CV"
 }
