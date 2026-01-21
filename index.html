@@ -12,6 +12,9 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/predictions.css">
+    <link rel="stylesheet" href="css/insights.css">
+    <link rel="stylesheet" href="css/quick-entry.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
@@ -157,6 +160,17 @@
                     </div>
                 </div>
 
+                <!-- Quick Entry -->
+                <div class="quick-entry-container">
+                    <div class="quick-entry-input-wrapper">
+                        <span class="quick-entry-icon">✨</span>
+                        <input type="text" id="quickEntryInput" class="quick-entry-input"
+                            placeholder="Ex: Gastei 50 no almoço ontem...">
+                        <button id="quickEntryBtn" class="quick-entry-btn">Adicionar</button>
+                    </div>
+                    <div id="quickEntryPreview" class="quick-entry-preview" style="display: none;"></div>
+                </div>
+
                 <!-- Summary Cards -->
                 <div class="summary-cards">
                     <div class="summary-card income">
@@ -210,6 +224,39 @@
                         <div class="top-expense-content" id="topExpenseContent">
                             <!-- Top expense will be rendered here -->
                         </div>
+                    </div>
+                </div>
+
+                <!-- AI Insights -->
+                <div class="insights-section" id="insightsSection">
+                    <div class="section-header">
+                        <h3 class="subsection-title">🧠 Insights Financeiros</h3>
+                    </div>
+                    <div class="insights-grid" id="insightsGrid">
+                        <!-- Insights will be rendered here -->
+                    </div>
+                </div>
+
+                <!-- Predictions -->
+                <div class="prediction-card" id="predictionCard">
+                    <div class="prediction-header">
+                        <span class="prediction-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                                height="16">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                            </svg>
+                            Previsão para Janeiro
+                        </span>
+                        <span class="trend-badge" id="predictionTrendBadge">
+                            Calculando...
+                        </span>
+                    </div>
+                    <div class="prediction-value-container">
+                        <div class="prediction-label">Estimativa para fim do mês</div>
+                        <div class="prediction-value is-projected" id="predictionValue">-- €</div>
+                    </div>
+                    <div class="prediction-comparison">
+                        <span id="predictionComparisonText">Baseado no ritmo atual</span>
                     </div>
                 </div>
 
@@ -663,6 +710,7 @@
 
     <script src="js/data.js"></script>
     <script src="js/charts.js"></script>
+    <script src="js/ai.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/app.js"></script>
     <script>

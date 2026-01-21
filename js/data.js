@@ -568,6 +568,58 @@ const DataManager = (function () {
             }).replace(/^\w/, c => c.toUpperCase());
         },
 
+        // --- Prediction & Intelligence ---
+
+        /**
+         * Calculates the projected expense for the current month based on daily average
+         */
+        getSpendingProjection() {
+            const today = new Date();
+            const currentDay = today.getDate();
+            const totalDays = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+
+            // Get expenses so far
+            const totals = this.getMonthlyTotals(today.getMonth(), today.getFullYear());
+            const currentExpense = totals.expense;
+
+            // If it's day 1 or no expenses, projection is current expense
+            if (currentDay <= 1 || currentExpense === 0) return currentExpense;
+
+            // Simple projection: (Current / Days_Passed) * Total_Days
+            const dailyAverage = currentExpense / currentDay;
+            return dailyAverage * totalDays;
+        },
+
+        /**
+         * Calculates average monthly expense over the last N months
+         */
+        getHistoricalAverage(months = 3) {
+            let totalExpense = 0;
+            let count = 0;
+            const today = new Date();
+
+            for (let i = 1; i <= months; i++) {
+                // Determine past month/year
+                let targetMonth = today.getMonth() - i;
+                let targetYear = today.getFullYear();
+
+                if (targetMonth < 0) {
+                    targetMonth += 12;
+                    targetYear--;
+                }
+
+                const totals = this.getMonthlyTotals(targetMonth, targetYear);
+
+                // Only count months with activity to avoid skewing average with zero-months
+                if (totals.expense > 0) {
+                    totalExpense += totals.expense;
+                    count++;
+                }
+            }
+
+            return count === 0 ? 0 : totalExpense / count;
+        },
+
         // Wallets Management
         getWallets() {
             const wallets = loadData(STORAGE_KEYS.WALLETS, null);

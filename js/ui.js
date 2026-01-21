@@ -3,6 +3,20 @@
  * Handles DOM manipulation, events, and user interactions
  */
 
+const Utils = {
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+};
+
 const UIManager = (function () {
     // DOM Elements cache
     let elements = {};
@@ -136,7 +150,29 @@ const UIManager = (function () {
             daySummary: document.getElementById('daySummary'),
             calMonthIncome: document.getElementById('calMonthIncome'),
             calMonthExpense: document.getElementById('calMonthExpense'),
-            calMonthBalance: document.getElementById('calMonthBalance')
+            calMonthBalance: document.getElementById('calMonthBalance'),
+
+            // Predictions
+            predictionCard: document.getElementById('predictionCard'),
+            predictionValue: document.getElementById('predictionValue'),
+            predictionComparisonText: document.getElementById('predictionComparisonText'),
+            predictionValue: document.getElementById('predictionValue'),
+            predictionComparisonText: document.getElementById('predictionComparisonText'),
+            predictionTrendBadge: document.getElementById('predictionTrendBadge'),
+
+            // Form elements for AI
+            noteInput: document.getElementById('note'),
+            amountInput: document.getElementById('amount'),
+            categorySelect: document.getElementById('category'),
+            anomalyAlert: document.getElementById('anomalyAlert'),
+
+            // Insights
+            insightsGrid: document.getElementById('insightsGrid'),
+
+            // Quick Entry
+            quickEntryInput: document.getElementById('quickEntryInput'),
+            quickEntryBtn: document.getElementById('quickEntryBtn'),
+            quickEntryPreview: document.getElementById('quickEntryPreview')
         };
     }
 
@@ -286,6 +322,94 @@ const UIManager = (function () {
 
         // Refresh budget progress on dashboard
         refreshBudgetProgress();
+
+        // Refresh predictions (only if showing current month)
+        const today = new Date();
+        if (currentMonth === today.getMonth() && currentYear === today.getFullYear()) {
+            refreshPrediction();
+            elements.predictionCard.style.display = 'block';
+        } else {
+            elements.predictionCard.style.display = 'none';
+        }
+
+        // Refresh AI Insights
+        refreshInsights();
+    }
+
+    // Prediction Logic
+    function refreshPrediction() {
+        if (!elements.predictionCard) return;
+
+        const projected = DataManager.getSpendingProjection();
+        const average = DataManager.getHistoricalAverage(3);
+        const totals = DataManager.getMonthlyTotals(currentMonth, currentYear);
+
+        // Display projected value
+        elements.predictionValue.textContent = DataManager.formatCurrency(projected);
+
+        if (average === 0) {
+            // Not enough data
+            elements.predictionTrendBadge.textContent = 'Sem histórico suficiente';
+            elements.predictionTrendBadge.className = 'trend-badge';
+            elements.predictionComparisonText.textContent = 'Continue usando o app para gerar média';
+            return;
+        }
+
+        const diffPercent = ((projected - average) / average) * 100;
+        const diffAbs = Math.abs(diffPercent).toFixed(0);
+
+        // Update badge and text
+        if (currentMonth === new Date().getMonth() && new Date().getDate() === 1 && totals.expense === 0) {
+            elements.predictionTrendBadge.textContent = 'Início do mês';
+            elements.predictionTrendBadge.className = 'trend-badge';
+            elements.predictionComparisonText.textContent = `Média histórica: ${DataManager.formatCurrency(average)}`;
+            elements.predictionCard.className = 'prediction-card';
+            return;
+        }
+
+        if (projected > average) {
+            elements.predictionTrendBadge.textContent = `Tendência de Alta (+${diffAbs}%)`;
+            elements.predictionTrendBadge.className = 'trend-badge up';
+            elements.predictionComparisonText.innerHTML = `Média histórica: <b>${DataManager.formatCurrency(average)}</b>`;
+
+            // Critical if > 20% above average
+            if (diffPercent > 20) {
+                elements.predictionCard.className = 'prediction-card status-critical';
+            } else {
+                elements.predictionCard.className = 'prediction-card status-warning';
+            }
+        } else {
+            elements.predictionTrendBadge.textContent = `Tendência de Baixa (-${diffAbs}%)`;
+            elements.predictionTrendBadge.className = 'trend-badge down';
+            elements.predictionComparisonText.innerHTML = `Média histórica: <b>${DataManager.formatCurrency(average)}</b>`;
+            elements.predictionCard.className = 'prediction-card status-good';
+        }
+    }
+
+    // AI Insights Renderer
+    function refreshInsights() {
+        if (!elements.insightsGrid || !window.AIManager) return;
+
+        const insights = AIManager.generateInsights();
+
+        if (insights.length === 0) {
+            elements.insightsGrid.innerHTML = `
+                <div class="insights-empty">
+                    Continue usando o app para gerar curiosidades sobre seus gastos 🧠
+                </div>
+            `;
+            return;
+        }
+
+        elements.insightsGrid.innerHTML = insights.map(insight => `
+            <div class="insight-card">
+                <span class="insight-icon">${insight.icon}</span>
+                <div class="insight-content">
+                    <div class="insight-text">${insight.text}</div>
+                    <div class="insight-detail">${insight.detail}</div>
+                </div>
+            </div>
+        `).join('');
     }
 
     // Budget progress on dashboard
@@ -1260,6 +1384,109 @@ const UIManager = (function () {
         // Calendar navigation
         elements.calPrevMonth.addEventListener('click', calendarPrevMonth);
         elements.calNextMonth.addEventListener('click', calendarNextMonth);
+
+        // AI Features
+        if (window.AIManager) {
+            // Auto Categorization
+            elements.noteInput.addEventListener('input', Utils.debounce((e) => {
+                const note = e.target.value;
+                const predictedCategory = AIManager.predictCategory(note);
+
+                if (predictedCategory) {
+                    // Find option with this text
+                    const options = Array.from(elements.categorySelect.options);
+                    const match = options.find(opt => opt.text === predictedCategory);
+
+                    if (match) {
+                        elements.categorySelect.value = match.value;
+                        // Optional: Visual feedback
+                        elements.categorySelect.style.borderColor = 'var(--color-primary)';
+                        setTimeout(() => elements.categorySelect.style.borderColor = '', 1000);
+                    }
+                }
+
+            }, 500));
+
+            // Anomaly Detection
+            const checkAnomaly = () => {
+                const amount = parseFloat(elements.amountInput.value);
+                const category = elements.categorySelect.value;
+                const type = document.querySelector('input[name="type"]:checked').value;
+
+                if (isNaN(amount) || !category) {
+                    elements.anomalyAlert.style.display = 'none';
+                    return;
+                }
+
+                const anomaly = AIManager.checkAnomaly(amount, category, type);
+
+                if (anomaly) {
+                    elements.anomalyAlert.style.display = 'block';
+                    elements.anomalyAlert.innerHTML = `⚠️ <strong>Atenção:</strong> Este valor é ${anomaly.diffPercent}% maior que sua média (${DataManager.formatCurrency(anomaly.avg)})`;
+                } else {
+                    elements.anomalyAlert.style.display = 'none';
+                }
+            };
+
+            elements.amountInput.addEventListener('input', Utils.debounce(checkAnomaly, 500));
+            elements.categorySelect.addEventListener('change', checkAnomaly);
+            document.querySelectorAll('input[name="type"]').forEach(r => r.addEventListener('change', checkAnomaly));
+
+            // Quick Entry
+            if (elements.quickEntryInput) {
+                // Live preview on input
+                elements.quickEntryInput.addEventListener('input', Utils.debounce(() => {
+                    const text = elements.quickEntryInput.value;
+                    const parsed = AIManager.parseNaturalText(text);
+
+                    if (parsed) {
+                        elements.quickEntryPreview.style.display = 'flex';
+                        elements.quickEntryPreview.innerHTML = `
+                            <span class="preview-type ${parsed.type}">${parsed.type === 'income' ? 'Receita' : 'Despesa'}</span>
+                            <span class="preview-amount">${DataManager.formatCurrency(parsed.amount)}</span>
+                            <span>→</span>
+                            <span class="preview-category">${parsed.category}</span>
+                            <span style="color: var(--color-text-muted);">(${parsed.date})</span>
+                        `;
+                    } else {
+                        elements.quickEntryPreview.style.display = 'none';
+                    }
+                }, 300));
+
+                // Submit on button click
+                elements.quickEntryBtn.addEventListener('click', () => {
+                    const text = elements.quickEntryInput.value;
+                    const parsed = AIManager.parseNaturalText(text);
+
+                    if (parsed) {
+                        const newTransaction = {
+                            id: Date.now().toString(),
+                            type: parsed.type,
+                            amount: parsed.amount,
+                            category: parsed.category,
+                            date: parsed.date,
+                            note: parsed.note,
+                            wallet: DataManager.getActiveWallet()
+                        };
+
+                        DataManager.addTransaction(newTransaction);
+                        elements.quickEntryInput.value = '';
+                        elements.quickEntryPreview.style.display = 'none';
+                        refreshDashboard();
+                        showNotification('Transação adicionada via texto! ✨', 'success');
+                    } else {
+                        showNotification('Não consegui entender. Inclua um valor (ex: "Gastei 50 em almoço").', 'error');
+                    }
+                });
+
+                // Submit on Enter key
+                elements.quickEntryInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        elements.quickEntryBtn.click();
+                    }
+                });
+            }
+        }
     }
 
     // Public API

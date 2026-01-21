@@ -1,0 +1,117 @@
+/* =====================================================
+   Quick Entry (Natural Text Input)
+   ===================================================== */
+.quick-entry-container {
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(139, 92, 246, 0.1));
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--color-border);
+}
+
+.quick-entry-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.quick-entry-icon {
+    font-size: 1.5rem;
+}
+
+.quick-entry-input {
+    flex: 1;
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: 0.75rem 1rem;
+    color: var(--color-text);
+    font-size: 0.95rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.quick-entry-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.15);
+}
+
+.quick-entry-input::placeholder {
+    color: var(--color-text-muted);
+}
+
+.quick-entry-btn {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    padding: 0.75rem 1.25rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.quick-entry-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+}
+
+.quick-entry-preview {
+    margin-top: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--color-card);
+    border-radius: var(--border-radius);
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.quick-entry-preview .preview-type {
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+.quick-entry-preview .preview-type.expense {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+.quick-entry-preview .preview-type.income {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+}
+
+.quick-entry-preview .preview-amount {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.quick-entry-preview .preview-category {
+    color: var(--color-primary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .quick-entry-input-wrapper {
+        flex-wrap: wrap;
+    }
+
+    .quick-entry-input {
+        flex: 1 1 100%;
+        order: 2;
+    }
+
+    .quick-entry-icon {
+        order: 1;
+    }
+
+    .quick-entry-btn {
+        order: 3;
+        flex: 1 1 100%;
+        margin-top: 0.5rem;
+    }
+}
