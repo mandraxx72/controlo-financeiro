@@ -19,6 +19,15 @@
             UIManager.init();
             console.log('🎨 UI Manager inicializado');
 
+            // Initialize Receipts Manager (IndexedDB)
+            if (window.ReceiptsManager) {
+                ReceiptsManager.init().then(() => {
+                    console.log('📸 Receipts Manager inicializado');
+                }).catch(err => {
+                    console.error('❌ Erro ao iniciar Receipts Manager:', err);
+                });
+            }
+
             console.log('✅ Aplicativo iniciado com sucesso!');
         } catch (error) {
             console.error('❌ Erro ao iniciar aplicativo:', error);

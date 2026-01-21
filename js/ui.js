@@ -172,7 +172,16 @@ const UIManager = (function () {
             // Quick Entry
             quickEntryInput: document.getElementById('quickEntryInput'),
             quickEntryBtn: document.getElementById('quickEntryBtn'),
-            quickEntryPreview: document.getElementById('quickEntryPreview')
+            quickEntryPreview: document.getElementById('quickEntryPreview'),
+
+            // Receipts
+            receiptCameraInput: document.getElementById('receiptCameraInput'),
+            receiptsContainer: document.getElementById('receiptsContainer'),
+            receiptsEmpty: document.getElementById('receiptsEmpty'),
+            receiptViewerOverlay: document.getElementById('receiptViewerOverlay'),
+            receiptViewerImage: document.getElementById('receiptViewerImage'),
+            closeReceiptViewer: document.getElementById('closeReceiptViewer'),
+            deleteReceiptBtn: document.getElementById('deleteReceiptBtn')
         };
     }
 
@@ -1486,6 +1495,127 @@ const UIManager = (function () {
                     }
                 });
             }
+
+            // Receipts
+            let currentReceiptId = null;
+
+            if (elements.receiptCameraInput) {
+                elements.receiptCameraInput.addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = async (event) => {
+                        const imageData = event.target.result;
+                        const today = new Date().toISOString().split('T')[0];
+
+                        try {
+                            await ReceiptsManager.addReceipt(imageData, today);
+                            showNotification('Talão guardado! 📸', 'success');
+                            refreshReceipts();
+                        } catch (err) {
+                            console.error('Error saving receipt:', err);
+                            showNotification('Erro ao guardar talão', 'error');
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                    e.target.value = ''; // Reset input
+                });
+
+                elements.closeReceiptViewer.addEventListener('click', () => {
+                    elements.receiptViewerOverlay.classList.remove('active');
+                    currentReceiptId = null;
+                });
+
+                elements.receiptViewerOverlay.addEventListener('click', (e) => {
+                    if (e.target === elements.receiptViewerOverlay) {
+                        elements.receiptViewerOverlay.classList.remove('active');
+                        currentReceiptId = null;
+                    }
+                });
+
+                elements.deleteReceiptBtn.addEventListener('click', async () => {
+                    if (!currentReceiptId) return;
+
+                    if (confirm('Tem certeza que quer eliminar este talão?')) {
+                        try {
+                            await ReceiptsManager.deleteReceipt(currentReceiptId);
+                            elements.receiptViewerOverlay.classList.remove('active');
+                            showNotification('Talão eliminado', 'success');
+                            refreshReceipts();
+                        } catch (err) {
+                            showNotification('Erro ao eliminar', 'error');
+                        }
+                    }
+                });
+            }
+
+            // Open receipt viewer
+            window.openReceiptViewer = function (receiptId, imageData) {
+                currentReceiptId = receiptId;
+                elements.receiptViewerImage.src = imageData;
+                elements.receiptViewerOverlay.classList.add('active');
+            };
+        }
+    }
+
+    // Receipts Gallery Renderer
+    async function refreshReceipts() {
+        if (!elements.receiptsContainer) return;
+
+        try {
+            const grouped = await ReceiptsManager.getAllReceiptsGrouped();
+            const months = Object.keys(grouped).sort().reverse();
+
+            if (months.length === 0) {
+                elements.receiptsEmpty.style.display = 'block';
+                return;
+            }
+
+            elements.receiptsEmpty.style.display = 'none';
+
+            let html = '';
+            months.forEach(yearMonth => {
+                const receipts = grouped[yearMonth];
+                const monthName = ReceiptsManager.getMonthName(yearMonth);
+
+                html += `
+                    <div class="receipts-month-folder">
+                        <div class="folder-header open" onclick="this.classList.toggle('open'); this.nextElementSibling.style.display = this.classList.contains('open') ? 'grid' : 'none';">
+                            <div class="folder-title">
+                                <span class="folder-icon">📁</span>
+                                <span>${monthName}</span>
+                            </div>
+                            <span class="folder-count">${receipts.length} talão(s)</span>
+                            <span class="folder-toggle">▼</span>
+                        </div>
+                        <div class="receipts-gallery">
+                            ${receipts.map(r => `
+                                <div class="receipt-thumb" onclick="openReceiptViewer('${r.id}', '${r.imageData.substring(0, 100)}...')">
+                                    <img src="${r.imageData}" alt="Talão">
+                                    <span class="receipt-date">${new Date(r.date).toLocaleDateString('pt-PT')}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Keep empty state but add folders before it
+            elements.receiptsContainer.innerHTML = html + elements.receiptsEmpty.outerHTML;
+            elements.receiptsEmpty.style.display = 'none';
+
+            // Fix onclick for full image data
+            document.querySelectorAll('.receipt-thumb').forEach(thumb => {
+                const img = thumb.querySelector('img');
+                thumb.onclick = () => openReceiptViewer(
+                    thumb.getAttribute('data-id') || Date.now().toString(),
+                    img.src
+                );
+            });
+
+        } catch (err) {
+            console.error('Error loading receipts:', err);
         }
     }
 
