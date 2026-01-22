@@ -175,6 +175,8 @@ const UIManager = (function () {
             quickEntryPreview: document.getElementById('quickEntryPreview'),
 
             // Receipts
+            // Receipts
+            cameraTriggerBtn: document.getElementById('cameraTriggerBtn'),
             receiptCameraInput: document.getElementById('receiptCameraInput'),
             receiptsContainer: document.getElementById('receiptsContainer'),
             receiptsEmpty: document.getElementById('receiptsEmpty'),
@@ -1499,7 +1501,13 @@ const UIManager = (function () {
             // Receipts
             let currentReceiptId = null;
 
-            if (elements.receiptCameraInput) {
+            if (elements.receiptCameraInput && elements.cameraTriggerBtn) {
+                // Manual trigger for mobile compatibility
+                elements.cameraTriggerBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    elements.receiptCameraInput.click();
+                });
+
                 elements.receiptCameraInput.addEventListener('change', async (e) => {
                     const file = e.target.files[0];
                     if (!file) return;
